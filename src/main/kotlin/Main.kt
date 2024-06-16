@@ -2,7 +2,6 @@ package connectfour
 
 class Player(val name: String, val sign: Char)
 
-
 class ConnectFour {
     private var rows = 6
     private var columns = 7
@@ -53,33 +52,44 @@ class ConnectFour {
     }
     fun makeMove() {
         var turnNum = 0
-        var input: String // means column where will put 'o' or '*'
-        var column: Int
+        var input: String // for checking input data
+        var col: Int
         var row: Int
+        var curPlayer: Player
         while (true) {
-
-            println("${players[turnNum % 2]?.name}'s turn:")
+            curPlayer = players[turnNum % 2]!!
+            println("${curPlayer.name}'s turn:")
             input = readln()
             if (input == "end") { println("Game over!"); return }
             try {
-                column = input.toInt()
-                if (column !in 1..columns) {
-                    println("The column number is out of range (1 - $columns)")
-                    continue
+                col = input.toInt() - 1
+                if (col + 1 !in 1..columns) {
+                    println("The column number is out of range (1 - $columns)"); continue
                 }
             } catch (e: Exception) {
-                println("Incorrect column number")
-                continue
+                println("Incorrect column number"); continue
             }
-            column--
-            if (' ' !in board[column]) { println("Column ${++column} is full"); continue }
-            row = board[column].indexOfLast { it == ' ' }
-            board[column][row] = players[turnNum++ % 2]?.sign!!
+            if (' ' !in board[col]) { println("Column ${col + 1} is full"); continue }
+            row = board[col].indexOfLast { it == ' ' }
+            board[col][row] = curPlayer.sign
             printBoard()
+
+            turnNum++
+            val data = buildString { board.forEach { c -> append(c.joinToString("") + "n") } }
+            println(data)
+            val regexPattern = buildString {
+                append(".*([${curPlayer.sign}]{4}|")
+                append("([${curPlayer.sign}].{$rows}){3}[${curPlayer.sign}]|")
+                append("([${curPlayer.sign}].{${rows - 1}}){4}|")
+                append("([${curPlayer.sign}].{${rows + 1}}){4}).*")
+            }
+            when {
+                Regex(regexPattern).matches(data)
+                -> { println("Player ${curPlayer.name} won \nGame over!");return }
+            }
         }
     }
 }
-
 
 fun main() {
     val connectFour = ConnectFour()
