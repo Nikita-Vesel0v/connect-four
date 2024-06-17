@@ -6,7 +6,8 @@ class ConnectFour {
     private var rows = 6
     private var columns = 7
     private var players = mutableMapOf<Int, Player>()
-    private var board: MutableList<MutableList<Char>>
+    private var board = mutableListOf<MutableList<Char>>()
+    private var col = 0 // current column in turn
 
     init {
         println("Connect Four")
@@ -50,48 +51,58 @@ class ConnectFour {
         println("Second player's name:")
         players[1] = Player(readln(), '*')
     }
-    fun makeMove() {
+    private fun inputCorrect(input: String): Boolean {
+        try {
+            col = input.toInt() - 1
+        } catch (e: Exception) {
+            println("Incorrect column number"); return false
+        }
+        when {
+            notInColumnRange()  -> { println("The column number is out of range (1 - $columns)"); return false }
+            columnIsFull() -> { println("Column ${col + 1} is full"); return false }
+            else -> return true
+        }
+    }
+    private fun notInColumnRange() = col !in 0 until columns
+    private fun columnIsFull() = ' ' !in board[col]
+
+    fun makeMove(): String {
         var turnNum = 0
         var input: String // for checking input data
-        var col: Int
         var row: Int
         var curPlayer: Player
+        var boardToString: String // for checking with Regex
         while (true) {
-            curPlayer = players[turnNum % 2]!!
+            curPlayer = players[turnNum % 2]!! // set player
             println("${curPlayer.name}'s turn:")
             input = readln()
-            if (input == "end") { println("Game over!"); return }
-            try {
-                col = input.toInt() - 1
-                if (col + 1 !in 1..columns) {
-                    println("The column number is out of range (1 - $columns)"); continue
-                }
-            } catch (e: Exception) {
-                println("Incorrect column number"); continue
-            }
-            if (' ' !in board[col]) { println("Column ${col + 1} is full"); continue }
+            if (input == "end") return "end"
+            if (!inputCorrect(input)) continue
+
             row = board[col].indexOfLast { it == ' ' }
-            board[col][row] = curPlayer.sign
+            board[col][row] = curPlayer.sign // set sign of current player in empty place
+            turnNum++ // set next player
             printBoard()
 
-            turnNum++
-            val data = buildString { board.forEach { c -> append(c.joinToString("") + "n") } }
-            println(data)
+            boardToString = buildString { board.forEach { c -> append(c.joinToString("") + "n") } } // n == \n
+            if (boardToString.count { it == ' '} == 0) return "draw"
             val regexPattern = buildString {
                 append(".*([${curPlayer.sign}]{4}|")
                 append("([${curPlayer.sign}].{$rows}){3}[${curPlayer.sign}]|")
-                append("([${curPlayer.sign}].{${rows - 1}}){4}|")
-                append("([${curPlayer.sign}].{${rows + 1}}){4}).*")
+                append("([${curPlayer.sign}].{${rows - 1}}){3}[${curPlayer.sign}]|")
+                append("([${curPlayer.sign}].{${rows + 1}}){3}[${curPlayer.sign}]).*")
             }
-            when {
-                Regex(regexPattern).matches(data)
-                -> { println("Player ${curPlayer.name} won \nGame over!");return }
-            }
+            if (Regex(regexPattern).matches(boardToString)) return curPlayer.name
         }
     }
 }
 
 fun main() {
     val connectFour = ConnectFour()
-    connectFour.makeMove()
+    val result = connectFour.makeMove()
+    println( when (result) {
+        "end" -> ""
+        "draw" -> "It is a draw"
+        else -> "Player $result won"
+    } + "\nGame over!")
 }
