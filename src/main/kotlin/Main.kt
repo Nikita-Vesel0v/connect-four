@@ -7,9 +7,9 @@ class ConnectFour {
     private var columns = 7
     private var players = mutableMapOf<Int, Player>()
     private var board = mutableListOf<MutableList<Char>>()
-    private var col = 0 // current column in turn
+    private var col = 0 // column in current turn
     private lateinit var curPlayer: Player
-    private var turnNum = 0
+    private var turnNum = 0 // number of current turn
     private var cntGames = 1
 
     init {
@@ -23,25 +23,22 @@ class ConnectFour {
     }
 
     fun menu() {
-        var result: String
         for (gameNum in 1..cntGames) {
             if (cntGames > 1) println("Game #$gameNum")
             createEmptyBoard()
             printBoard()
-            result = game()
-            when (result) {
-                "end" -> break
-                "draw" -> println("It is a draw")
-                else -> println("Player $result won")
+            while (true) {
+                when (makeTurn()) {
+                    "next turn" -> continue
+                    "end" -> return
+                    "draw" -> { println("It is a draw"); break }
+                    "win" -> { println("Player ${curPlayer.name} won"); break }
+                }
             }
             if (cntGames > 1) {
-                println("""
-                Score
-                ${players[0]?.name}: ${players[0]?.score} ${players[1]?.name}: ${players[1]?.score}
-            """.trimIndent())
+                println("Score\n${players[0]?.name}: ${players[0]?.score} ${players[1]?.name}: ${players[1]?.score}")
             }
         }
-        println("Game over!")
     }
     private fun setCountGames() {
         var input: String
@@ -61,7 +58,6 @@ class ConnectFour {
             }
             break
         }
-
     }
     private fun setBoardSize() {
         var sizes: List<Int>
@@ -115,8 +111,6 @@ class ConnectFour {
     private fun columnIsFull() = ' ' !in board[col]
     private fun result(): String {
         val boardToString: String = buildString { board.forEach { c -> append(c.joinToString("") + "n") } } // n == \n
-        // for checking with Regex
-
         if (boardToString.count { it == ' '} == 0) {
             players.forEach {it.value.score++} // +1 for each player
             return "draw"
@@ -133,30 +127,25 @@ class ConnectFour {
         }
         return "next turn"
     }
-    private fun game(): String {
-        var input: String // for checking input data
-        var row: Int
-        while (true) {
-            curPlayer = players[turnNum % 2]!! // set player
-            println("${curPlayer.name}'s turn:")
-            input = readln()
-            if (input == "end") return "end"
-            if (!inputCorrect(input)) continue
+    private fun makeTurn(): String {
+        curPlayer = players[turnNum % 2]!! // set player
+        println("${curPlayer.name}'s turn:")
+        val input = readln() // for checking input data
+        if (input == "end") return "end"
+        if (!inputCorrect(input)) return "next turn"
 
-            row = board[col].indexOfLast { it == ' ' }
-            board[col][row] = curPlayer.sign // set sign of current player in empty place
+        val row = board[col].indexOfLast { it == ' ' }
+        board[col][row] = curPlayer.sign // set sign of current player in empty place
 
-            printBoard()
-            turnNum++
-            when (result()) {
-                "draw" -> return "draw"
-                "win" -> return curPlayer.name
-            }
-        }
+        printBoard()
+        turnNum++
+        return result()
+
     }
 }
 
 fun main() {
     val connectFour = ConnectFour()
     connectFour.menu()
+    println("Game over!")
 }
